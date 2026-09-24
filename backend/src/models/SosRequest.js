@@ -1,0 +1,161 @@
+const mongoose = require('mongoose');
+
+/**
+ * GeoJSON Point Schema for SOS Location
+ */
+const pointLocationSchema = new mongoose.Schema(
+  {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point',
+      required: true,
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      required: [true, 'Tọa độ [kinh độ, vĩ độ] là bắt buộc'],
+      validate: {
+        validator: function (coords) {
+          if (!Array.isArray(coords) || coords.length !== 2) return false;
+          const [lng, lat] = coords;
+          return (
+            typeof lng === 'number' &&
+            typeof lat === 'number' &&
+            lng >= -180 &&
+            lng <= 180 &&
+            lat >= -90 &&
+            lat <= 90
+          );
+        },
+        message: 'Tọa độ không hợp lệ. Định dạng [kinh độ (-180..180), vĩ độ (-90..90)].',
+      },
+    },
+  },
+  { _id: false }
+);
+
+const sosRequestSchema = new mongoose.Schema(
+  {
+    sosCode: {
+      type: String,
+      required: [true, 'Mã yêu cầu SOS (sosCode) là bắt buộc'],
+      unique: true,
+      uppercase: true,
+      trim: true,
+      default: function () {
+        return (
+          'SOS-' +
+          Date.now().toString(36).toUpperCase() +
+          '-' +
+          Math.random().toString(36).substring(2, 6).toUpperCase()
+        );
+      },
+    },
+    citizenId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Người gửi yêu cầu cứu nạn (citizenId) là bắt buộc'],
+    },
+    location: {
+      type: pointLocationSchema,
+      required: [true, 'Vị trí GeoJSON (location) là bắt buộc'],
+    },
+    areaId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'AdministrativeArea',
+      required: [true, 'Khu vực hành chính (areaId) là bắt buộc'],
+    },
+    address: {
+      type: String,
+      required: [true, 'Địa chỉ cụ thể là bắt buộc'],
+      trim: true,
+    },
+    emergencyType: {
+      type: String,
+      required: [true, 'Loại tình huống khẩn cấp là bắt buộc'],
+      enum: {
+        values: [
+          'FLOOD',
+          'FIRE',
+          'LANDSLIDE',
+          'STORM',
+          'ACCIDENT',
+          'MEDICAL',
+          'MISSING_PERSON',
+          'OTHER',
+        ],
+        message: 'Loại khẩn cấp {VALUE} không hợp lệ',
+      },
+    },
+    priority: {
+      type: String,
+      required: [true, 'Mức độ ưu tiên là bắt buộc'],
+      enum: {
+        values: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
+        message: 'Mức độ ưu tiên {VALUE} không hợp lệ',
+      },
+      default: 'MEDIUM',
+    },
+    people: {
+      type: Number,
+      required: [true, 'Số lượng người gặp nạn là bắt buộc'],
+      min: [1, 'Số người gặp nạn phải lớn hơn hoặc bằng 1'],
+      default: 1,
+    },
+    description: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    status: {
+      type: String,
+      required: [true, 'Trạng thái cứu hộ là bắt buộc'],
+      enum: {
+        values: [
+          'PENDING',
+          'VERIFIED',
+          'ASSIGNED',
+          'ACCEPTED',
+          'ON_THE_WAY',
+          'ARRIVED',
+          'RESCUING',
+          'COMPLETED',
+          'CANCELLED',
+          'REJECTED',
+        ],
+        message: 'Trạng thái cứu hộ {VALUE} không hợp lệ',
+      },
+      default: 'PENDING',
+    },
+    resolvedAt: {
+      type: Date,
+      default: null,
+    },
+  },
+  {
+    timestamps: true,
+    collection: 'sos_requests',
+  }
+);
+
+// Indexes
+sosRequestSchema.index({ location: '2dsphere' });
+sosRequestSchema.index({ sosCode: 1 }, { unique: true });
+sosRequestSchema.index({ citizenId: 1 });
+sosRequestSchema.index({ areaId: 1 });
+sosRequestSchema.index({ status: 1 });
+sosRequestSchema.index({ priority: 1 });
+sosRequestSchema.index({ createdAt: -1 });
+sosRequestSchema.index({ areaId: 1, status: 1, priority: 1, createdAt: -1 });
+
+// Tự động gán resolvedAt khi chuyển sang trạng thái kết thúc
+sosRequestSchema.pre('save', function (next) {
+  if (this.isModified('status')) {
+    if (['COMPLETED', 'CANCELLED', 'REJECTED'].includes(this.status) && !this.resolvedAt) {
+      this.resolvedAt = new Date();
+    }
+  }
+  next();
+});
+
+module.exports = mongoose.model('SosRequest', sosRequestSchema);

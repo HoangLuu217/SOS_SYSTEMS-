@@ -1,0 +1,58 @@
+const mongoose = require('mongoose');
+
+const notificationSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Người nhận thông báo (userId) là bắt buộc'],
+    },
+    sosId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SosRequest',
+      default: null,
+    },
+    type: {
+      type: String,
+      required: [true, 'Loại thông báo (type) là bắt buộc'],
+      trim: true,
+      uppercase: true,
+    },
+    title: {
+      type: String,
+      required: [true, 'Tiêu đề thông báo là bắt buộc'],
+      trim: true,
+      maxlength: [200, 'Tiêu đề không quá 200 ký tự'],
+    },
+    content: {
+      type: String,
+      required: [true, 'Nội dung thông báo là bắt buộc'],
+      trim: true,
+    },
+    data: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    isRead: {
+      type: Boolean,
+      default: false,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+      immutable: true,
+    },
+  },
+  {
+    timestamps: false,
+    collection: 'notifications',
+  }
+);
+
+// Indexes
+notificationSchema.index({ userId: 1 });
+notificationSchema.index({ isRead: 1 });
+notificationSchema.index({ createdAt: -1 });
+notificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 });
+
+module.exports = mongoose.model('Notification', notificationSchema);
