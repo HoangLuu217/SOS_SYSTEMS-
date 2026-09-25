@@ -74,7 +74,6 @@ const authorityOrganizationSchema = new mongoose.Schema(
 );
 
 // Indexes
-authorityOrganizationSchema.index({ code: 1 }, { unique: true });
 authorityOrganizationSchema.index({ areaId: 1 });
 authorityOrganizationSchema.index({ type: 1 });
 authorityOrganizationSchema.index({ status: 1 });

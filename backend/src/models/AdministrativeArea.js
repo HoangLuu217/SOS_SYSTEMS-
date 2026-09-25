@@ -94,7 +94,6 @@ const administrativeAreaSchema = new mongoose.Schema(
 );
 
 // Indexes
-administrativeAreaSchema.index({ code: 1 }, { unique: true });
 administrativeAreaSchema.index({ parentId: 1 });
 administrativeAreaSchema.index({ type: 1 });
 administrativeAreaSchema.index({ boundary: '2dsphere' }, { sparse: true });

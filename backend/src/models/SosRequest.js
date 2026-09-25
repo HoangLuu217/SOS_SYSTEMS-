@@ -140,7 +140,6 @@ const sosRequestSchema = new mongoose.Schema(
 
 // Indexes
 sosRequestSchema.index({ location: '2dsphere' });
-sosRequestSchema.index({ sosCode: 1 }, { unique: true });
 sosRequestSchema.index({ citizenId: 1 });
 sosRequestSchema.index({ areaId: 1 });
 sosRequestSchema.index({ status: 1 });
@@ -149,13 +148,12 @@ sosRequestSchema.index({ createdAt: -1 });
 sosRequestSchema.index({ areaId: 1, status: 1, priority: 1, createdAt: -1 });
 
 // Tự động gán resolvedAt khi chuyển sang trạng thái kết thúc
-sosRequestSchema.pre('save', function (next) {
+sosRequestSchema.pre('save', function () {
   if (this.isModified('status')) {
     if (['COMPLETED', 'CANCELLED', 'REJECTED'].includes(this.status) && !this.resolvedAt) {
       this.resolvedAt = new Date();
     }
   }
-  next();
 });
 
 module.exports = mongoose.model('SosRequest', sosRequestSchema);

@@ -49,7 +49,6 @@ const vehicleSchema = new mongoose.Schema(
 );
 
 // Indexes
-vehicleSchema.index({ plateNumber: 1 }, { unique: true });
 vehicleSchema.index({ teamId: 1 });
 vehicleSchema.index({ type: 1 });
 vehicleSchema.index({ status: 1 });

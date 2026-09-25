@@ -109,13 +109,12 @@ safeLocationSchema.index({ type: 1 });
 safeLocationSchema.index({ status: 1 });
 
 // Tự động chuyển trạng thái sang FULL nếu currentOccupancy >= capacity (khi capacity > 0)
-safeLocationSchema.pre('save', function (next) {
+safeLocationSchema.pre('save', function () {
   if (this.capacity > 0 && this.currentOccupancy >= this.capacity && this.status === 'ACTIVE') {
     this.status = 'FULL';
   } else if (this.capacity > 0 && this.currentOccupancy < this.capacity && this.status === 'FULL') {
     this.status = 'ACTIVE';
   }
-  next();
 });
 
 module.exports = mongoose.model('SafeLocation', safeLocationSchema);

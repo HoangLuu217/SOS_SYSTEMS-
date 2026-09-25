@@ -52,11 +52,6 @@ const rescuerSchema = new mongoose.Schema(
       },
       default: null,
     },
-    areaId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'AdministrativeArea',
-      default: null,
-    },
     verificationStatus: {
       type: String,
       enum: {
@@ -244,16 +239,12 @@ const userSchema = new mongoose.Schema(
 );
 
 // Indexes
-userSchema.index({ phone: 1 }, { unique: true });
-userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ roles: 1 });
-userSchema.index({ 'rescuer.areaId': 1 });
 userSchema.index({ 'rescuer.verificationStatus': 1 });
 userSchema.index({ 'rescuer.availabilityStatus': 1 });
 userSchema.index({
   'rescuer.verificationStatus': 1,
   'rescuer.availabilityStatus': 1,
-  'rescuer.areaId': 1,
 });
 userSchema.index({ 'authority.organizationId': 1 });
 userSchema.index({ 'authority.areaId': 1 });
@@ -262,7 +253,7 @@ userSchema.index({ 'authority.areaId': 1 });
  * Business Validation:
  * - Khi user có role LOCAL_AUTHORITY, bắt buộc phải có authority.organizationId và authority.areaId
  */
-userSchema.pre('validate', function (next) {
+userSchema.pre('validate', function () {
   if (this.roles && this.roles.includes('LOCAL_AUTHORITY')) {
     if (!this.authority?.organizationId) {
       this.invalidate('authority.organizationId', 'Tài khoản LOCAL_AUTHORITY bắt buộc phải có organizationId');
@@ -271,7 +262,6 @@ userSchema.pre('validate', function (next) {
       this.invalidate('authority.areaId', 'Tài khoản LOCAL_AUTHORITY bắt buộc phải có areaId');
     }
   }
-  next();
 });
 
 /**
